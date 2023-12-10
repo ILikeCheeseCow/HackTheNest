@@ -3,7 +3,8 @@ import json
 import os
 import logging
 import time
-import threading  # Import threading
+import threading
+import arduino  # Import the modified arduino module
 
 # Constants
 MEDICATION_FILE = "medications.json"
@@ -80,6 +81,11 @@ def check_for_meds(medications):
 
         if current_time.hour == scheduled_time.hour and current_time.minute == scheduled_time.minute:
             print(f"Time for meds: {med}")
+            # Example condition based on medication name
+            if "forward" in med.lower():  # Change the condition as needed
+                arduino.move_forward()
+            else:
+                arduino.move_backward()
 
 # Function to run medication checks in a separate thread
 def run_medication_checks(medications):
@@ -89,29 +95,32 @@ def run_medication_checks(medications):
 
 # Main script
 if __name__ == "__main__":
-    medications = load_medications()
+    try:
+        medications = load_medications()
 
-    # Start the medication check thread
-    med_check_thread = threading.Thread(target=run_medication_checks, args=(medications,))
-    med_check_thread.daemon = True
-    med_check_thread.start()
+        # Start the medication check thread
+        med_check_thread = threading.Thread(target=run_medication_checks, args=(medications,))
+        med_check_thread.daemon = True
+        med_check_thread.start()
 
-    while True:
-        print("\nMedication Scheduler")
-        print("1. Add a medication")
-        print("2. Remove a medication")
-        print("3. List medications")
-        print("4. Exit")
-        choice = input("Enter your choice: ")
+        while True:
+            print("\nMedication Scheduler")
+            print("1. Add a medication")
+            print("2. Remove a medication")
+            print("3. List medications")
+            print("4. Exit")
+            choice = input("Enter your choice: ")
 
-        if choice == "1":
-            med_name = input("Enter medication name: ")
-            schedule = input("Enter schedule (in cron format, e.g., '0 10 * * *' for every day at 10 AM): ")
-            add_medication(medications, med_name, schedule)
-        elif choice == "2":
-            med_name = input("Enter medication name to remove: ")
-            remove_medication(medications, med_name)
-        elif choice == "3":
-            list_medications(medications)
-        elif choice == "4":
-            break
+            if choice == "1":
+                med_name = input("Enter medication name: ")
+                schedule = input("Enter schedule (in cron format, e.g., '0 10 * * *' for every day at 10 AM): ")
+                add_medication(medications, med_name, schedule)
+            elif choice == "2":
+                med_name = input("Enter medication name to remove: ")
+                remove_medication(medications, med_name)
+            elif choice == "3":
+                list_medications(medications)
+            elif choice == "4":
+                break
+    finally:
+        arduino.close_connection()  # Ensure the connection is closed properly
